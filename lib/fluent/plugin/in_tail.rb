@@ -354,13 +354,19 @@ module Fluent
             inode = stat.ino
 
             last_inode = @pe.read_inode
+            last_size = @pe.read_pos
             if inode == last_inode
               # rotated file has the same inode number with the last file.
               # assuming following situation:
               #   a) file was once renamed and backed, or
               #   b) symlink or hardlink to the same file is recreated
               # in either case, seek to the saved position
-              pos = @pe.read_pos
+              if fsize < last_size
+                pos = fsize
+                @pe.update_pos(pos)
+              else
+                pos = last_size
+              end
             elsif last_inode != 0
               # this is FilePositionEntry and fluentd once started.
               # read data from the head of the rotated file.
